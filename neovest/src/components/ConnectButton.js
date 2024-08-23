@@ -1,27 +1,54 @@
-import React from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import WalletConnectProvider from "@walletconnect/web3-provider";
+import Web3 from 'web3';
 
 const ConnectButton = () => {
-  const handleClick = async () => {
-    const clientId = 'b01f434d-5ce9-40fd-3eab-08db08692dca';
-    const clientSecret = 'a76acc09caf54c648cf4bbcad5c3dacd';
+  const [connected, setConnected] = useState(false);
+  const [account, setAccount] = useState(null);
 
+  const connectWallet = async () => {
     try {
-      const response = await axios.get('https://dashboard.getfront.com/api/v1/cataloglink', {
-        headers: {
-          'X-Client-Id': clientId,
-          'X-Client-Secret': clientSecret,
+      // Create WalletConnect Provider with a public RPC URL
+      const provider = new WalletConnectProvider({
+        rpc: {
+          1: "https://rpc.ankr.com/eth", // Public RPC URL for Ethereum Mainnet
+          // You can add other networks here if needed
         },
+        chainId: 1, // Ethereum Mainnet
       });
-      console.log(response.data);
+
+      // Enable session (triggers QR Code modal)
+      await provider.enable();
+
+      // Log to ensure provider is correctly initialized
+      console.log("Provider initialized:", provider);
+
+      // Create Web3 instance
+      const web3 = new Web3(provider);
+
+      // Log to ensure Web3 instance is correctly created
+      console.log("Web3 instance:", web3);
+
+      // Get connected accounts
+      const accounts = await web3.eth.getAccounts();
+      console.log("Connected account:", accounts[0]);
+
+      setAccount(accounts[0]);
+      setConnected(true);
+
+      // Handle disconnection
+      provider.on("disconnect", () => {
+        setConnected(false);
+        setAccount(null);
+      });
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Failed to connect wallet:", error);
     }
   };
 
   return (
-    <button onClick={handleClick}>
-      Connect
+    <button onClick={connectWallet}>
+      {connected ? `Connected: ${account}` : 'Connect Wallet'}
     </button>
   );
 };
